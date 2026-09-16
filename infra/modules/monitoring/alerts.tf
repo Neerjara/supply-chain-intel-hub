@@ -20,16 +20,15 @@ resource "azurerm_monitor_action_group" "scih_ops" {
 
 # Alert 1: Sev1 - API High Latency Alert (p95 > 1500ms)
 resource "azurerm_monitor_scheduled_query_rules_alert_v2" "api_high_latency" {
-  name                = "alert-scih-api-high-latency"
-  resource_group_name = var.resource_group_name
-  location            = var.location
-  scopes              = [azurerm_application_insights.appi.id]
-  severity            = 1
+  name                 = "alert-scih-api-high-latency"
+  resource_group_name  = var.resource_group_name
+  location             = var.location
+  scopes               = [azurerm_application_insights.appi.id]
+  severity             = 1
   evaluation_frequency = "PT5M"
   window_duration      = "PT5M"
-  criteria_time_aggregation = "Average"
-  description         = "Triggers when SCIH API p95 response duration exceeds 1500ms."
-  tags                = var.tags
+  description          = "Triggers when SCIH API p95 response duration exceeds 1500ms."
+  tags                 = var.tags
 
   criteria {
     query                   = <<-QUERY
@@ -54,16 +53,15 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "api_high_latency" {
 
 # Alert 2: Sev2 - HTTP 5xx Error Rate > 2%
 resource "azurerm_monitor_scheduled_query_rules_alert_v2" "http_5xx_errors" {
-  name                = "alert-scih-http-5xx-errors"
-  resource_group_name = var.resource_group_name
-  location            = var.location
-  scopes              = [azurerm_application_insights.appi.id]
-  severity            = 2
+  name                 = "alert-scih-http-5xx-errors"
+  resource_group_name  = var.resource_group_name
+  location             = var.location
+  scopes               = [azurerm_application_insights.appi.id]
+  severity             = 2
   evaluation_frequency = "PT5M"
   window_duration      = "PT5M"
-  criteria_time_aggregation = "Average"
-  description         = "Triggers when HTTP 5xx error rate exceeds 2%."
-  tags                = var.tags
+  description          = "Triggers when HTTP 5xx error rate exceeds 2%."
+  tags                 = var.tags
 
   criteria {
     query                   = <<-QUERY
@@ -92,16 +90,15 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "http_5xx_errors" {
 
 # Alert 3: Sev1 - Worker Processing Failure Rate > 5%
 resource "azurerm_monitor_scheduled_query_rules_alert_v2" "worker_failures" {
-  name                = "alert-scih-worker-failures"
-  resource_group_name = var.resource_group_name
-  location            = var.location
-  scopes              = [azurerm_application_insights.appi.id]
-  severity            = 1
+  name                 = "alert-scih-worker-failures"
+  resource_group_name  = var.resource_group_name
+  location             = var.location
+  scopes               = [azurerm_application_insights.appi.id]
+  severity             = 1
   evaluation_frequency = "PT5M"
   window_duration      = "PT5M"
-  criteria_time_aggregation = "Count"
-  description         = "Triggers when worker background job exception count exceeds 5 in 5 minutes."
-  tags                = var.tags
+  description          = "Triggers when worker background job exception count exceeds 5 in 5 minutes."
+  tags                 = var.tags
 
   criteria {
     query                   = <<-QUERY
