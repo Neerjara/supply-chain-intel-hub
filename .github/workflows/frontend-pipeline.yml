@@ -29,7 +29,7 @@ jobs:
 
       - name: Install Dependencies
         working-directory: ./src/web
-        run: npm ci
+        run: npm install
 
       - name: Typecheck TypeScript
         working-directory: ./src/web
