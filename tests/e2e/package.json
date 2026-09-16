@@ -1,0 +1,15 @@
+{
+  "name": "scih-playwright-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test:dev": "playwright test --config=config/playwright.dev.config.ts",
+    "test:uat": "playwright test --config=config/playwright.uat.config.ts",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.42.1",
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3"
+  }
+}

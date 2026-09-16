@@ -1,0 +1,17 @@
+# Enterprise Code Ownership Definitions
+
+# Global Repository Owners
+* @org/lead-architects
+
+# Infrastructure & Terraform
+/infra/ @org/devops-team
+
+# Backend (ASP.NET Core & Worker)
+/src/api/ @org/backend-team
+/src/workers/ @org/backend-team
+
+# Frontend (React)
+/src/web/ @org/frontend-team
+
+# End-to-End Tests
+/tests/e2e/ @org/qa-team

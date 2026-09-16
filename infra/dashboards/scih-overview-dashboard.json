@@ -1,0 +1,87 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Portal/dashboards/2015-08-01-preview#",
+  "lenses": {
+    "0": {
+      "order": 0,
+      "parts": {
+        "0": {
+          "position": { "x": 0, "y": 0, "rowSpan": 4, "colSpan": 6 },
+          "metadata": {
+            "inputs": [
+              {
+                "name": "query",
+                "value": "requests | where cloud_RoleName == 'SCIH.Api' | summarize p95_ms = percentiles(duration, 95), p50_ms = percentiles(duration, 50) by bin(timestamp, 5m)"
+              }
+            ],
+            "type": "Extension/AppInsightsExtension/PartType/AnalyticsChartPart",
+            "settings": {
+              "content": {
+                "title": "SCIH API Response Latency (p50 & p95 ms)",
+                "chartType": "Line"
+              }
+            }
+          }
+        },
+        "1": {
+          "position": { "x": 6, "y": 0, "rowSpan": 4, "colSpan": 6 },
+          "metadata": {
+            "inputs": [
+              {
+                "name": "query",
+                "value": "requests | where cloud_RoleName == 'SCIH.Api' | summarize 5xx_Errors = countif(toint(resultCode) >= 500), 2xx_Success = countif(toint(resultCode) < 400) by bin(timestamp, 5m)"
+              }
+            ],
+            "type": "Extension/AppInsightsExtension/PartType/AnalyticsChartPart",
+            "settings": {
+              "content": {
+                "title": "HTTP Status Code Distribution",
+                "chartType": "StackedColumn"
+              }
+            }
+          }
+        },
+        "2": {
+          "position": { "x": 0, "y": 4, "rowSpan": 4, "colSpan": 6 },
+          "metadata": {
+            "inputs": [
+              {
+                "name": "query",
+                "value": "exceptions | where cloud_RoleName == 'SCIH.Worker' | summarize ExceptionCount = count() by type, bin(timestamp, 15m)"
+              }
+            ],
+            "type": "Extension/AppInsightsExtension/PartType/AnalyticsChartPart",
+            "settings": {
+              "content": {
+                "title": "Worker Background Processing Exceptions",
+                "chartType": "Area"
+              }
+            }
+          }
+        },
+        "3": {
+          "position": { "x": 6, "y": 4, "rowSpan": 4, "colSpan": 6 },
+          "metadata": {
+            "inputs": [
+              {
+                "name": "query",
+                "value": "requests | summarize TotalRequests = count(), AvgDuration = avg(duration) by name | order by TotalRequests desc"
+              }
+            ],
+            "type": "Extension/AppInsightsExtension/PartType/AnalyticsGridPart",
+            "settings": {
+              "content": {
+                "title": "API Endpoint Request Volume & Performance Grid"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "metadata": {
+    "model": {
+      "timeRange": { "value": { "relative": { "duration": 24, "type": "hours" } } },
+      "title": "SCIH Enterprise Operational Dashboard"
+    }
+  }
+}

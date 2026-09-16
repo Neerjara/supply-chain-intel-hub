@@ -1,0 +1,49 @@
+<!-- Dashboard API Policy: /v1/dashboard -->
+<policies>
+    <inbound>
+        <base />
+        
+        <!-- API Version Header Validation -->
+        <check-header name="api-version" failed-check-httpcode="400" failed-check-error-message="Missing or invalid 'api-version' header. Expected 'v1'." ignore-case="true">
+            <value>v1</value>
+        </check-header>
+
+        <!-- Microsoft Entra ID (Azure AD) JWT Validation -->
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Invalid or expired OAuth Bearer token." require-expiration-time="true" require-scheme="Bearer">
+            <openid-config url="https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration" />
+            <audiences>
+                <audience>api://scih-backend-api</audience>
+            </audiences>
+            <issuers>
+                <issuer>https://login.microsoftonline.com/common/v2.0</issuer>
+            </issuers>
+            <required-claims>
+                <claim name="scp" match="all">
+                    <value>Dashboard.Read</value>
+                </claim>
+            </required-claims>
+        </validate-jwt>
+
+        <!-- Response Caching (Lookup 30 seconds for GET requests) -->
+        <cache-lookup vary-by-developer="false" vary-by-developer-organization="false" downstream-caching-type="none">
+            <vary-by-header>Accept</vary-by-header>
+            <vary-by-header>Authorization</vary-by-header>
+        </cache-lookup>
+
+        <!-- Propagate Correlation ID to Backend -->
+        <set-header name="X-Correlation-ID" exists-action="override">
+            <value>@(context.Request.Headers.GetValueOrDefault("X-Correlation-ID", Guid.NewGuid().ToString()))</value>
+        </set-header>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+        <!-- Cache Store for 30 Seconds -->
+        <cache-store duration="30" />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>

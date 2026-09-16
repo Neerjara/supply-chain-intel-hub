@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 16 Database Service
+  scih-postgres:
+    image: postgres:16-alpine
+    container_name: scih-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: psqladmin
+      POSTGRES_PASSWORD: LocalDevPassword123!
+      POSTGRES_DB: scih_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts/seed-database.sql:/docker-entrypoint-initdb.d/seed-database.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U psqladmin -d scih_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - scih-network
+
+  # ASP.NET Core Web API Service
+  scih-api:
+    build:
+      context: ./src/api
+      dockerfile: SCIH.Api/Dockerfile
+    container_name: scih-api
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=scih-postgres;Database=scih_db;Username=psqladmin;Password=LocalDevPassword123!
+    ports:
+      - "8080:8080"
+    depends_on:
+      scih-postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8080/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    networks:
+      - scih-network
+
+  # .NET 8 Worker Service
+  scih-worker:
+    build:
+      context: ./src/workers
+      dockerfile: SCIH.Worker/Dockerfile
+    container_name: scih-worker
+    restart: unless-stopped
+    environment:
+      - DOTNET_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=scih-postgres;Database=scih_db;Username=psqladmin;Password=LocalDevPassword123!
+    depends_on:
+      scih-postgres:
+        condition: service_healthy
+    networks:
+      - scih-network
+
+  # React Frontend Service (NGINX SPA)
+  scih-web:
+    build:
+      context: ./src/web
+      dockerfile: Dockerfile
+    container_name: scih-web
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      scih-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    networks:
+      - scih-network
+
+volumes:
+  pgdata:
+    driver: local
+
+networks:
+  scih-network:
+    driver: bridge

@@ -1,0 +1,30 @@
+<!-- Search API Policy: /v1/search -->
+<policies>
+    <inbound>
+        <base />
+
+        <!-- Microsoft Entra ID JWT Validation -->
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized Bearer Token." require-scheme="Bearer">
+            <openid-config url="https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration" />
+            <audiences>
+                <audience>api://scih-backend-api</audience>
+            </audiences>
+        </validate-jwt>
+
+        <!-- Rate Limiting (Strict 60 calls per 60 seconds per IP for Search queries) -->
+        <rate-limit-by-key calls="60" renewal-period="60" counter-key="@(context.Request.IpAddress)" />
+
+        <set-header name="X-Correlation-ID" exists-action="override">
+            <value>@(context.Request.Headers.GetValueOrDefault("X-Correlation-ID", Guid.NewGuid().ToString()))</value>
+        </set-header>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>

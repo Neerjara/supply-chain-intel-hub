@@ -1,0 +1,55 @@
+<!-- APIM Global Tenant Policy -->
+<policies>
+    <inbound>
+        <!-- CORS Policy allowing React Static Web App Frontend -->
+        <cors allow-credentials="true">
+            <allowed-origins>
+                <origin>https://stapp-scih-prod-eastus-001.azurestaticapps.net</origin>
+                <origin>http://localhost:3000</origin>
+            </allowed-origins>
+            <allowed-methods preflight-result-max-age="300">
+                <method>GET</method>
+                <method>POST</method>
+                <method>PUT</method>
+                <method>DELETE</method>
+                <method>OPTIONS</method>
+            </allowed-methods>
+            <allowed-headers>
+                <header>Authorization</header>
+                <header>Content-Type</header>
+                <header>X-Correlation-ID</header>
+                <header>api-version</header>
+            </allowed-headers>
+            <expose-headers>
+                <header>X-Correlation-ID</header>
+            </expose-headers>
+        </cors>
+
+        <!-- Rate Limit by Client IP (Global Fallback: 100 calls per 60 seconds) -->
+        <rate-limit-by-key calls="100" renewal-period="60" counter-key="@(context.Request.IpAddress)" />
+    </inbound>
+    <backend>
+        <forward-request />
+    </backend>
+    <outbound>
+        <!-- Security Header Hardening -->
+        <set-header name="X-Content-Type-Options" exists-action="override">
+            <value>nosniff</value>
+        </set-header>
+        <set-header name="X-Frame-Options" exists-action="override">
+            <value>DENY</value>
+        </set-header>
+        <set-header name="X-XSS-Protection" exists-action="override">
+            <value>1; mode=block</value>
+        </set-header>
+        <!-- Remove internal server headers -->
+        <set-header name="Server" exists-action="delete" />
+        <set-header name="X-Powered-By" exists-action="delete" />
+        <set-header name="X-AspNet-Version" exists-action="delete" />
+    </outbound>
+    <on-error>
+        <set-header name="X-Correlation-ID" exists-action="override">
+            <value>@(context.Response.Headers.GetValueOrDefault("X-Correlation-ID", Guid.NewGuid().ToString()))</value>
+        </set-header>
+    </on-error>
+</policies>

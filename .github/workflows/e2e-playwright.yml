@@ -1,0 +1,47 @@
+name: E2E - Playwright Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target Environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - uat
+  schedule:
+    - cron: '0 4 * * *' # Daily at 04:00 UTC
+
+jobs:
+  playwright-e2e:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: ./tests/e2e
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        working-directory: ./tests/e2e
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright Tests
+        working-directory: ./tests/e2e
+        run: npx playwright test --config=config/playwright.${{ github.event.inputs.environment || 'dev' }}.config.ts
+
+      - name: Upload Playwright Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: tests/e2e/playwright-report/
+          retention-days: 30

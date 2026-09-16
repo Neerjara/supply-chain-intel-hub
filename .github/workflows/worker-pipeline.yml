@@ -1,0 +1,116 @@
+name: Pipeline - Worker Service (CI/CD)
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/workers/**'
+      - '.github/workflows/worker-pipeline.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/workers/**'
+
+env:
+  AZURE_CONTAINER_APP_NAME: 'ca-scih-worker-prod-001'
+  RESOURCE_GROUP_NAME: 'rg-scih-prod-eastus-001'
+  IMAGE_NAME: 'scih-worker'
+
+jobs:
+  # Stage 1: Build & Unit Test .NET Worker
+  build-and-test:
+    name: Build & Test Worker Service
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore SCIH.sln
+
+      - name: Build Worker Service
+        run: dotnet build src/workers/SCIH.Worker/SCIH.Worker.csproj --configuration Release --no-restore
+
+      - name: Run Unit Tests
+        run: dotnet test SCIH.sln --configuration Release --no-build --verbosity normal
+
+  # Stage 2: SonarQube Security Scan
+  sonarqube-analysis:
+    name: SonarQube Code Scan
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install SonarScanner for .NET
+        run: dotnet tool install --global dotnet-sonarscanner
+
+      - name: Run SonarQube Scanner
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: |
+          dotnet-sonarscanner begin /k:"scih-worker" /d:sonar.host.url="${{ secrets.SONAR_HOST_URL }}" /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+          dotnet build src/workers/SCIH.Worker/SCIH.Worker.csproj --configuration Release
+          dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+
+  # Stage 3: Docker Build & Push Image to ACR
+  docker-build-push:
+    name: Docker Build & Push Image
+    needs: [build-and-test, sonarqube-analysis]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Azure Container Registry (ACR)
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ secrets.REGISTRY_LOGIN_SERVER }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./src/workers
+          file: ./src/workers/SCIH.Worker/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest
+
+  # Stage 4: Deploy Revision to Azure Container Apps
+  deploy-worker-container-app:
+    name: Deploy to Azure Container Apps
+    needs: docker-build-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy Revision to Azure Container App
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          containerAppName: ${{ env.AZURE_CONTAINER_APP_NAME }}
+          resourceGroup: ${{ env.RESOURCE_GROUP_NAME }}
+          imageToDeploy: ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}

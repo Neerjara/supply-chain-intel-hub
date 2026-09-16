@@ -1,0 +1,14 @@
+root = true
+
+[*]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.{cs,csproj}]
+indent_size = 4
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+csharp_style_pattern_local_over_anonymous_function = true:suggestion

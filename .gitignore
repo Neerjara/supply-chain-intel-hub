@@ -1,0 +1,35 @@
+# Visual Studio & .NET
+*.user
+*.userosscache
+*.sln.docstates
+bin/
+obj/
+.vs/
+*.userprefs
+
+# Node & Frontend
+node_modules/
+dist/
+build/
+.cache/
+.eslintcache
+npm-debug.log*
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars.json
+.terraform.lock.hcl
+
+# Testing & Playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# OS & Environment Secrets
+.env
+.env.local
+.DS_Store
+Thumbs.db
