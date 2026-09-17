@@ -11,8 +11,8 @@ try
 
     var builder = Host.CreateApplicationBuilder(args);
 
-    builder.Services.AddSerilog((context, services, configuration) => configuration
-        .ReadFrom.Configuration(context.Configuration)
+    builder.Services.AddSerilog((services, configuration) => configuration
+        .ReadFrom.Configuration(builder.Configuration)
         .ReadFrom.Services(services)
         .Enrich.FromLogContext());
 
